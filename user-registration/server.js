@@ -1,11 +1,17 @@
 const express = require("express");
 const connectDB = require("./config/db");
+const cors = require("cors");
 const UserModel = require("./models/user.model");
 
 connectDB();
 const app = express();
 
 app.use(express.json());
+app.use(
+  cors({
+    origin: "http://localhost:5173",
+  }),
+);
 
 // api
 
@@ -35,6 +41,23 @@ app.post("/register", async (req, res) => {
     });
   } catch (error) {
     console.log(error);
+    return res.status(500).json({
+      success: false,
+      message: "Internal server error",
+    });
+  }
+});
+
+app.get("/users", async (req, res) => {
+  try {
+    let users = await UserModel.find();
+
+    return res.status(200).json({
+      message: "Users fetched",
+      success: true,
+      data: users,
+    });
+  } catch (error) {
     return res.status(500).json({
       success: false,
       message: "Internal server error",
