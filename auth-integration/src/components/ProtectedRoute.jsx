@@ -1,11 +1,13 @@
-import React from "react";
 import { Navigate } from "react-router";
 import { useContextData } from "../context/AuthContext";
 
 const ProtectedRoute = ({ children }) => {
-  let { auth } = useContextData();
+  let { isLoggedInUser, isLoading } = useContextData();
+  console.log("auth->", isLoggedInUser);
 
-  if (!auth) {
+  if (isLoading) return <h1>Loading...</h1>;
+
+  if (!isLoggedInUser) {
     return <Navigate to={"/"} />;
   }
 
