@@ -6,6 +6,13 @@ export const createPostController = async (req, res) => {
     let { title, location } = req.body;
 
     let media = req.files;
+
+    if (!media)
+      return res.status(404).json({
+        message: "At least one file is required",
+        success: false,
+      });
+
     // for single
     // let uploadedImage = await sendFiles(media.buffer, media.originalname);
 
