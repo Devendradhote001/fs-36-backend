@@ -132,3 +132,47 @@ export const loginUserController = async (req, res) => {
     });
   }
 };
+
+export const logoutController = async (req, res) => {
+  try {
+    let user = req.user;
+
+    if (!user)
+      return res.status(401).json({
+        success: false,
+        message: "Unauthorized request",
+      });
+
+    user.refreshToken = "";
+    await user.save();
+
+    res.clearCookie("accessToken");
+    res.clearCookie("refreshToken");
+
+    return res.status(200).json({
+      message: "User log out",
+      success: true,
+    });
+  } catch (error) {
+    console.log("logout", error);
+    return res.status(500).json({
+      success: false,
+      message: "Internal server error",
+    });
+  }
+};
+
+export const getCurrentUser = async (req, res) => {
+  try {
+    return res.status(200).json({
+      success: true,
+      message: "login user",
+      data: req.user,
+    });
+  } catch (error) {
+    return res.status(500).json({
+      success: false,
+      message: "Internal server errro",
+    });
+  }
+};

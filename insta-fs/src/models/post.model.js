@@ -4,7 +4,7 @@ const postSchema = new mongoose.Schema(
   {
     user_id: {
       type: mongoose.Schema.Types.ObjectId,
-      ref: user,
+      ref: "user",
       required: true,
     },
     caption: {
@@ -28,7 +28,7 @@ const postSchema = new mongoose.Schema(
   },
   {
     timestamps: true,
-  },
+  }
 );
 
 const PostModel = mongoose.model("post", postSchema);
