@@ -107,3 +107,44 @@ export const updatePostController = async (req, res) => {
     });
   }
 };
+
+export const getAllPostController = async (req, res) => {
+  try {
+    let allPost = await PostModel.find();
+
+    return res.status(200).json({
+      success: true,
+      message: "All post fetched",
+      data: allPost,
+    });
+  } catch (error) {
+    return res.status(500).json({
+      message: "Internal server error",
+      success: false,
+    });
+  }
+};
+
+export const getSinglePostController = async (req, res) => {
+  try {
+    let postId = req.params.postId;
+
+    let post = await PostModel.findById(postId);
+
+    if (!post)
+      return res.status(404).json({
+        message: "Post not found",
+        success: false,
+      });
+
+    return res.status(200).json({
+      message: "Post fetched",
+      data: post,
+    });
+  } catch (error) {
+    return res.status(500).json({
+      message: "Internal server error",
+      success: false,
+    });
+  }
+};

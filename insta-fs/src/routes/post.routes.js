@@ -1,6 +1,8 @@
 import express from "express";
 import {
   createPostController,
+  getAllPostController,
+  getSinglePostController,
   updatePostController,
 } from "../controllers/post.controller.js";
 import { uplaods } from "../config/multer.js";
@@ -21,5 +23,8 @@ router.patch(
   uplaods.array("images", 5),
   updatePostController
 );
+
+router.get("/all-post", authMiddleware, getAllPostController);
+router.get("/:postId", getSinglePostController);
 
 export default router;
