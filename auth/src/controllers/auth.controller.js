@@ -1,6 +1,7 @@
 const UserModel = require("../models/user.model");
 const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
+const cacheInstance = require("../config/redis");
 
 const registerController = async (req, res) => {
   try {
@@ -48,10 +49,7 @@ const registerController = async (req, res) => {
       data: user,
     });
   } catch (error) {
-    return res.status(500).json({
-      success: false,
-      message: "Internal server error",
-    });
+    throw new Error("Internal server error");
   }
 };
 
@@ -60,11 +58,7 @@ const loginController = async (req, res) => {
     // 1. receive email and password
     let { email, password } = req.body;
 
-    if (!email || !password)
-      return res.status(400).json({
-        success: false,
-        message: "Email and password is required",
-      });
+    if (!email || !password) throw new Error("Email and pass is required");
 
     // 2. check user exists or not
     let isExisted = await UserModel.findOne({ email });
@@ -86,7 +80,7 @@ const loginController = async (req, res) => {
 
     // 4. generate token
     let token = jwt.sign({ id: isExisted._id }, process.env.JWT_SECRET_KEY, {
-      expiresIn: "1h",
+      expiresIn: "30min",
     });
 
     // 5. save in cookies
@@ -99,9 +93,36 @@ const loginController = async (req, res) => {
       data: isExisted,
     });
   } catch (error) {
+    throw new Error("Internal server error");
+  }
+};
+
+const logoutController = async (req, res) => {
+  try {
+    let token = req.cookies.token;
+
+    if (!token)
+      return res.status(401).json({
+        message: "unauthorized request",
+        success: false,
+      });
+
+    let decode = jwt.verify(token, process.env.JWT_SECRET_KEY);
+
+    let restTime = Math.floor(decode.exp - Date.now() / 1000);
+
+    await cacheInstance.set(token, "blacklisted", "EX", restTime);
+
+    res.clearCookie("token");
+
+    return res.status(200).json({
+      message: "user logged out",
+      success: true,
+    });
+  } catch (error) {
     return res.status(500).json({
-      success: false,
       message: "Internal server error",
+      success: false,
     });
   }
 };
@@ -109,4 +130,5 @@ const loginController = async (req, res) => {
 module.exports = {
   registerController,
   loginController,
+  logoutController,
 };

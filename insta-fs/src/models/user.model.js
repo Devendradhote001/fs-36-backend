@@ -3,13 +3,16 @@ import bcrypt from "bcrypt";
 
 const userSchema = new mongoose.Schema(
   {
+    provider: {
+      type: String,
+      default: "google",
+    },
     fullName: {
       type: String,
       required: [true, "Name is required"],
     },
     userName: {
       type: String,
-      required: [true, "Name is required"],
     },
     email: {
       type: String,
@@ -24,7 +27,6 @@ const userSchema = new mongoose.Schema(
     },
     password: {
       type: String,
-      required: [true, "Name is required"],
       minlength: 8,
     },
     followers: [
@@ -57,7 +59,7 @@ const userSchema = new mongoose.Schema(
   },
   {
     timestamps: true,
-  },
+  }
 );
 
 userSchema.pre("save", function () {

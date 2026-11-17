@@ -32,13 +32,13 @@ export const registerUserController = async (req, res) => {
     let accessToken = generateToken(
       user._id,
       process.env.ACCESS_TOKEN_SECRET,
-      "30m",
+      "30m"
     );
 
     let refreshToken = generateToken(
       user._id,
       process.env.REFRESH_TOKEN_SECRET,
-      "1h",
+      "1h"
     );
 
     user.refreshToken = refreshToken;
@@ -97,13 +97,13 @@ export const loginUserController = async (req, res) => {
     let accessToken = generateToken(
       isExists._id,
       process.env.ACCESS_TOKEN_SECRET,
-      "30m",
+      "30m"
     );
 
     let refreshToken = generateToken(
       isExists._id,
       process.env.REFRESH_TOKEN_SECRET,
-      "1h",
+      "1h"
     );
 
     user.refreshToken = refreshToken;
@@ -170,6 +170,53 @@ export const getCurrentUser = async (req, res) => {
       data: req.user,
     });
   } catch (error) {
+    return res.status(500).json({
+      success: false,
+      message: "Internal server errro",
+    });
+  }
+};
+
+export const getAuthUserFromGoogle = async (req, res) => {
+  try {
+    let { email } = req.user;
+
+    let isExists = await UserModel.findOne({ email });
+
+    console.log("is exists", isExists);
+
+    if (!isExists)
+      return res.status(404).json({
+        success: false,
+        message: "User not found",
+      });
+
+    let accessToken = generateToken(
+      isExists._id,
+      process.env.ACCESS_TOKEN_SECRET,
+      "30m"
+    );
+
+    let refreshToken = generateToken(
+      isExists._id,
+      process.env.REFRESH_TOKEN_SECRET,
+      "1h"
+    );
+
+    isExists.refreshToken = refreshToken;
+    isExists.provider = "google";
+    await isExists.save();
+
+    res.cookie("accessToken", accessToken);
+    res.cookie("refresToken", refreshToken);
+
+    return res.status(200).json({
+      success: true,
+      mesage: "User logged in",
+      data: isExists,
+    });
+  } catch (error) {
+    console.log(error);
     return res.status(500).json({
       success: false,
       message: "Internal server errro",
