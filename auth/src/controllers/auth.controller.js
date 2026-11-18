@@ -2,6 +2,8 @@ const UserModel = require("../models/user.model");
 const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
 const cacheInstance = require("../config/redis");
+const ApiError = require("../utils/ApiError");
+const asyncHandler = require("../utils/asyncHandler");
 
 const registerController = async (req, res) => {
   try {
@@ -53,49 +55,7 @@ const registerController = async (req, res) => {
   }
 };
 
-const loginController = async (req, res) => {
-  try {
-    // 1. receive email and password
-    let { email, password } = req.body;
-
-    if (!email || !password) throw new Error("Email and pass is required");
-
-    // 2. check user exists or not
-    let isExisted = await UserModel.findOne({ email });
-
-    if (!isExisted)
-      return res.status(404).json({
-        success: false,
-        message: "User not found",
-      });
-
-    // 3. check password
-    let comparePass = bcrypt.compareSync(password, isExisted.password);
-
-    if (!comparePass)
-      return res.status(401).json({
-        success: false,
-        message: "Invalid credentials",
-      });
-
-    // 4. generate token
-    let token = jwt.sign({ id: isExisted._id }, process.env.JWT_SECRET_KEY, {
-      expiresIn: "30min",
-    });
-
-    // 5. save in cookies
-    res.cookie("token", token);
-
-    // 6. send response
-    return res.status(200).json({
-      success: true,
-      message: "User loggedIn",
-      data: isExisted,
-    });
-  } catch (error) {
-    throw new Error("Internal server error");
-  }
-};
+const loginController = asyncHandler();
 
 const logoutController = async (req, res) => {
   try {
