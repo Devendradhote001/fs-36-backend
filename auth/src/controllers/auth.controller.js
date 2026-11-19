@@ -5,57 +5,116 @@ const cacheInstance = require("../config/redis");
 const ApiError = require("../utils/ApiError");
 const asyncHandler = require("../utils/asyncHandler");
 
-const registerController = async (req, res) => {
+const registerController = asyncHandler(async (req, res) => {
+  // 1 take user data from frontend
+  let { name, email, password, mobile } = req.body;
+
+  if (!name || !email || !password)
+    return res.status(400).json({
+      success: false,
+      message: "All fields are required",
+    });
+
+  // 2. is existed user
+  let isExisted = await UserModel.findOne({ email });
+
+  if (isExisted)
+    return res.status(409).json({
+      message: "User already exists",
+      success: false,
+    });
+
+  // 3. hash password
+  let hashPass = bcrypt.hashSync(password, 10);
+
+  // 4. create/save user in db
+  let user = await UserModel.create({
+    name,
+    email,
+    password: hashPass,
+    mobile,
+  });
+
+  // 5. create token
+  let token = jwt.sign({ id: user._id }, process.env.JWT_SECRET_KEY, {
+    expiresIn: "1h",
+  });
+
+  // 6. store in cookies
+  res.cookie("token", token);
+
+  // 7. send response
+  return res.status(201).json({
+    success: true,
+    message: "User registered",
+    data: user,
+  });
+});
+
+const loginController = asyncHandler(async (req, res) => {
   try {
-    // 1 take user data from frontend
-    let { name, email, password, mobile } = req.body;
+    let { email, password } = req.body;
 
-    if (!name || !email || !password)
+    if (!email || !password)
       return res.status(400).json({
-        success: false,
         message: "All fields are required",
-      });
-
-    // 2. is existed user
-    let isExisted = await UserModel.findOne({ email });
-
-    if (isExisted)
-      return res.status(409).json({
-        message: "User already exists",
         success: false,
       });
 
-    // 3. hash password
-    let hashPass = bcrypt.hashSync(password, 10);
+    let isExists = await UserModel.findOne({ email });
 
-    // 4. create/save user in db
-    let user = await UserModel.create({
-      name,
-      email,
-      password: hashPass,
-      mobile,
+    if (!isExists)
+      return res.status(404).json({
+        success: false,
+        message: "User not found",
+      });
+
+    let checkPass = isExists.comparePass(password);
+
+    if (!checkPass)
+      return res.status(401).json({
+        message: "Invalid credentials",
+        success: false,
+      });
+
+    let accessToken = generateToken(
+      isExists._id,
+      process.env.ACCESS_TOKEN_SECRET,
+      "30m",
+    );
+
+    let refreshToken = generateToken(
+      isExists._id,
+      process.env.REFRESH_TOKEN_SECRET,
+      "1h",
+    );
+
+    user.refreshToken = refreshToken;
+    await user.save();
+
+    res.cookie("accessToken", accessToken, {
+      httpOnly: true,
+      maxAge: 30 * 60 * 1000,
     });
 
-    // 5. create token
-    let token = jwt.sign({ id: user._id }, process.env.JWT_SECRET_KEY, {
-      expiresIn: "1h",
+    res.cookie("refreshToken", refreshToken, {
+      httpOnly: true,
+      maxAge: 7 * 24 * 60 * 60 * 1000,
     });
 
-    // 6. store in cookies
-    res.cookie("token", token);
-
-    // 7. send response
     return res.status(201).json({
+      message: "user Logged in",
       success: true,
-      message: "User registered",
-      data: user,
+      data: isExists,
     });
   } catch (error) {
-    throw new Error("Internal server error");
+    console.log("error in reg", error);
+    return res.status(500).json({
+      success: false,
+      message: "Internal server error",
+    });
   }
-};
-
-const loginController = asyncHandler();
+});
 
 const logoutController = async (req, res) => {
   try {
@@ -92,3 +151,5 @@ module.exports = {
   loginController,
   logoutController,
 };
+
+// null, undefined, false, "", 0 -0 document.all nan
