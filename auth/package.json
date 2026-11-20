@@ -16,6 +16,7 @@
     "cookie-parser": "^1.4.7",
     "cors": "^2.8.6",
     "dotenv": "^18.0.5",
+    "ejs": "^7.0.2",
     "express": "^5.2.1",
     "ioredis": "^6.0.0",
     "jsonwebtoken": "^9.0.3",

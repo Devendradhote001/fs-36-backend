@@ -6,4 +6,5 @@ const router = express.Router();
 
 router.get("/", authMiddleware, getHomeDataController);
 
+
 module.exports = router;

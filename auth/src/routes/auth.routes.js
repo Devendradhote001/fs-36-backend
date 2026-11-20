@@ -3,6 +3,7 @@ const {
   registerController,
   loginController,
   logoutController,
+  forgetPasswordController,
 } = require("../controllers/auth.controller");
 const authMiddleware = require("../middlewares/auth.middleware");
 
@@ -18,5 +19,7 @@ router.get("/me", authMiddleware, (req, res) => {
 router.post("/register", registerController);
 router.post("/login", loginController);
 router.post("/logout", logoutController);
+
+router.post("/forget-password", forgetPasswordController);
 
 module.exports = router;

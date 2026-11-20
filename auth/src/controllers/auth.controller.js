@@ -146,10 +146,26 @@ const logoutController = async (req, res) => {
   }
 };
 
+const forgetPasswordController = asyncHandler(async (req, res) => {
+  let email = req.body;
+
+  if (!email) throw new ApiError("email is required", 400);
+
+  let isExist = await UserModel.findOne({ email });
+
+  if (!isExist) throw new ApiError("user not found", 404);
+
+  // link creation
+
+
+  res.send(email);
+});
+
 module.exports = {
   registerController,
   loginController,
   logoutController,
+  forgetPasswordController,
 };
 
 // null, undefined, false, "", 0 -0 document.all nan
