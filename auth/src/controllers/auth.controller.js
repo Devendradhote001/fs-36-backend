@@ -4,6 +4,7 @@ const jwt = require("jsonwebtoken");
 const cacheInstance = require("../config/redis");
 const ApiError = require("../utils/ApiError");
 const asyncHandler = require("../utils/asyncHandler");
+const sendMailToUser = require("../config/mail");
 
 const registerController = asyncHandler(async (req, res) => {
   // 1 take user data from frontend
@@ -77,29 +78,17 @@ const loginController = asyncHandler(async (req, res) => {
         success: false,
       });
 
-    let accessToken = generateToken(
-      isExists._id,
-      process.env.ACCESS_TOKEN_SECRET,
-      "30m",
+    let accessToken = jwt.sign(
+      { id: isExists._id },
+      process.env.JWT_SECRET_KEY,
+      {
+        expiresIn: "1h",
+      },
     );
 
-    let refreshToken = generateToken(
-      isExists._id,
-      process.env.REFRESH_TOKEN_SECRET,
-      "1h",
-    );
-
-    user.refreshToken = refreshToken;
-    await user.save();
-
-    res.cookie("accessToken", accessToken, {
+    res.cookie("token", accessToken, {
       httpOnly: true,
       maxAge: 30 * 60 * 1000,
-    });
-
-    res.cookie("refreshToken", refreshToken, {
-      httpOnly: true,
-      maxAge: 7 * 24 * 60 * 60 * 1000,
     });
 
     return res.status(201).json({
@@ -147,25 +136,70 @@ const logoutController = async (req, res) => {
 };
 
 const forgetPasswordController = asyncHandler(async (req, res) => {
-  let email = req.body;
+  let email = req.body.email;
 
   if (!email) throw new ApiError("email is required", 400);
 
-  let isExist = await UserModel.findOne({ email });
+  let isValidUser = await UserModel.findOne({ email });
 
-  if (!isExist) throw new ApiError("user not found", 404);
+  if (!isValidUser) throw new ApiError("User not found", 404);
 
-  // link creation
+  let resetToken = jwt.sign(
+    { id: isValidUser._id },
+    process.env.JWT_SECRET_KEY_TEMP,
+    {
+      expiresIn: "5m",
+    },
+  );
 
+  let resetLink = `http://localhost:3000/api/auth/reset-password/${resetToken}`;
 
-  res.send(email);
+  await sendMailToUser(email, "Reset your password", resetLink);
+
+  return res.status(200).json({
+    success: true,
+    message: "Link sent to email",
+  });
 });
+
+const resetPasswordController = asyncHandler(async (req, res) => {
+  let token = req.params.token;
+
+  let decode = jwt.verify(token, process.env.JWT_SECRET_KEY_TEMP);
+
+  if (!decode) throw new ApiError("unauthorized request", 401);
+
+  let user = await UserModel.findById(decode.id);
+
+  return res.render("resetPassword.ejs", { id: user._id });
+});
+
+const updatePasswordController = asyncHandler(async (req, res) => {
+  let password = req.body.password;
+  let userId = req.params.user_id;
+
+  if (!password) throw new ApiError("password is required", 400);
+
+  let user = await UserModel.findById(userId);
+
+  user.password = password;
+  await user.save();
+
+  return res.status(200).json({
+    success: true,
+    message: "Password updated successfully",
+    data: user,
+  });
+});
+
 
 module.exports = {
   registerController,
   loginController,
   logoutController,
   forgetPasswordController,
+  resetPasswordController,
+  updatePasswordController,
 };
 
 // null, undefined, false, "", 0 -0 document.all nan

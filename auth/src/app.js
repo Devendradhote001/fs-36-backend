@@ -22,10 +22,6 @@ app.get("/", (req, res) => {
   res.render("index.ejs");
 });
 
-app.get("/greet", (req, res) => {
-  res.send("holaa amigo");
-});
-
 app.use(express.json());
 
 // middleware for reading formData
