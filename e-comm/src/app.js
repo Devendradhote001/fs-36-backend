@@ -4,8 +4,17 @@ import authRoutes from "./routes/auth.routes.js";
 import productRoutes from "./routes/product.routes.js";
 import errorHandler from "./middlewares/error.middleware.js";
 import ApiError from "./utils/ApiError.js";
+import cacheInstance from "./config/cache.js";
 
 const app = express();
+
+cacheInstance.on("connect", () => {
+  console.log("redis connected");
+});
+
+cacheInstance.on("error", (err) => {
+  console.log("redis error", err);
+});
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
